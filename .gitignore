@@ -3,7 +3,8 @@
 *.ko
 *.obj
 *.elf
-
+# temporary objects
+*.swp
 # Precompiled Headers
 *.gch
 *.pch

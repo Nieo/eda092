@@ -26,7 +26,7 @@
 /*
  * Function declarations
  */
-
+void concat(char*, char**); 
 void PrintCommand(int, Command *);
 void PrintPgm(Pgm *);
 void stripwhite(char *);
@@ -67,6 +67,13 @@ int main(void)
         /* execute it */
         n = parse(line, &cmd);
         PrintCommand(n, &cmd);
+	char *string = malloc(1000);
+	Pgm * pgm = cmd.pgm;
+	char **cp = pgm->pgmlist;
+	concat(string,cp);
+	printf("cmd : %s\n", string);
+	system(string);
+	free(string);
       }
     }
     
@@ -76,7 +83,22 @@ int main(void)
   }
   return 0;
 }
-
+/*
+ * 
+ * Description: List of strings -> single string
+ */
+void 
+concat(char *dest, char** list)
+{
+ int i = 0;
+ while(*list){
+  char *l = *list++;
+  while(*l){
+   dest[i++] = *l++;
+  }
+ dest[i++] = ' ';
+ }
+}
 /*
  * Name: PrintCommand
  *
@@ -107,8 +129,8 @@ PrintPgm (Pgm *p)
   }
   else {
     char **pl = p->pgmlist;
-
-    /* The list is in reversed order so print
+    
+     /* The list is in reversed order so print
      * it reversed to get right
      */
     PrintPgm(p->next);
