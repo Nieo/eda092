@@ -52,6 +52,9 @@ int main(void)
   signal(SIGINT, INThandler);
 
   while (!done) {
+    waitpid(-1, 0, WNOHANG);
+
+
     char *line;
     line = readline("> ");
 
@@ -72,6 +75,7 @@ int main(void)
         /* execute it */
         n = parse(line, &cmd);
         
+
 
         if(isEqual(*(cmd.pgm->pgmlist), "exit")){
           printf("Closing lsh\n");
@@ -109,6 +113,7 @@ void  INThandler(int sig)
   
   //Perhaps we should change this from 0?
   if(rPid != 0) {
+    printf("killing %d\n", rPid);
     kill(rPid, SIGINT);
     rPid = 0;
   }
@@ -144,6 +149,11 @@ launch(Command cmd, int parentfd)
     }else if(parentfd != -1){ //Got a pipe redirect stdout to pipe
       //printf("Redirecting to pipe\n");
       dup2(parentfd, 1);
+    }
+    if(cmd.bakground){
+      setpgid(0 ,0);
+      int a = getpgid();
+      printf("Changed pgid %d\n", a);
     }
 
 
