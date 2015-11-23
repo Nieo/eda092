@@ -159,9 +159,6 @@ launch(Command cmd, int parentfd)
       launch(cmd, fd[1]);
       close(fd[1]);
     }
-    if(cmd.bakground){
-      printf("I cant hanlde &\n");
-    }
     if(execvp(*pgmlist, pgmlist) == -1){
      perror("lsh");
      exit(status);
