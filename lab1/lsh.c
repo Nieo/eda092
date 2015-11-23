@@ -37,6 +37,7 @@ void changeDir(char *);
 void INThandler(int);
 /* When non-zero, this global means the user is done using this program. */
 int done = 0;
+pid_t rPid; //Currently running pid
 
 /*
  * Name: main
@@ -125,8 +126,13 @@ changeDir(char * destination){
 
 void  INThandler(int sig)
 {
-     //signal(sig, SIG_IGN);
-     printf("You hit Ctrl-C");
+  //Is this enough?  
+
+  if(rPid == 0) {
+    printf("You attempted to abort");
+  }else{
+    printf("There was nothing to abort");
+  }
 }
 
 
@@ -183,7 +189,9 @@ launch(Command cmd, int parentfd)
  }else if(pid < 0){ //error
     perror("Error");
  }else if(!cmd.bakground){ //parent
+    rPid = pid;
     wpid = waitpid(pid, &status, 0);
+    rPid = 0;
     
  }else{
    printf("%d\n", pid);
