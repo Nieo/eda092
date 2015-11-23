@@ -128,10 +128,8 @@ void  INThandler(int sig)
 {
   //Is this enough?  
 
-  if(rPid == 0) {
-    printf("You attempted to abort");
-  }else{
-    printf("There was nothing to abort");
+  if(rPid != 0) {
+    kill(rPid, SIGINT);
   }
 }
 
