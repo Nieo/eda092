@@ -33,7 +33,6 @@ void PrintCommand(int, Command *);
 void PrintPgm(Pgm *);
 void stripwhite(char *);
 int isEqual(char *, char *);
-void changeDir(char *);
 void INThandler(int);
 /* When non-zero, this global means the user is done using this program. */
 int done = 0;
@@ -72,13 +71,15 @@ int main(void)
         add_history(line);
         /* execute it */
         n = parse(line, &cmd);
-        PrintCommand(n, &cmd);
+        
 
         if(isEqual(*(cmd.pgm->pgmlist), "exit")){
+          printf("Closing lsh\n");
           exit(0);
         }else if(isEqual(*(cmd.pgm->pgmlist), "cd")){
-          changeDir(cmd.pgm->pgmlist[1]);
+          chdir(cmd.pgm->pgmlist[1]);
         }else{
+          PrintCommand(n, &cmd);
           launch(cmd, -1); 
         }        
       }
@@ -101,27 +102,6 @@ isEqual(char *s1, char *s2){
     return 0;  
   }
   return 1;
-}
-void
-changeDir(char * destination){
-  if(isEqual(destination, "..") || *destination == '/'){ 
-    chdir(destination);
-  }else{
-    char *cwd =malloc(1024*sizeof(char));
-    getcwd(cwd, sizeof(cwd));
-    printf("Current wd  %s\n", cwd);
-    char * p = cwd;
-    while(*p){
-      *p++;
-    }
-    *p++ = '/';
-    while(*destination){
-      *p++ = *destination++;
-    }
-    printf("change wd  %s\n", cwd);
-    chdir(cwd);
-    free(cwd);
-  }
 }
 
 void  INThandler(int sig)
@@ -184,6 +164,7 @@ launch(Command cmd, int parentfd)
     }
     if(execvp(*pgmlist, pgmlist) == -1){
      perror("lsh");
+     exit(status);
     }
  }else if(pid < 0){ //error
     perror("Error");
