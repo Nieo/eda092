@@ -19,6 +19,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <signal.h>
 #include <readline/readline.h>
 #include <readline/history.h>
 #include "parse.h"
@@ -33,6 +34,7 @@ void PrintPgm(Pgm *);
 void stripwhite(char *);
 int isEqual(char *, char *);
 void changeDir(char *);
+void INThandler(int);
 /* When non-zero, this global means the user is done using this program. */
 int done = 0;
 
@@ -46,6 +48,8 @@ int main(void)
 {
   Command cmd;
   int n;
+
+  signal(SIGINT, INThandler);
 
   while (!done) {
     char *line;
@@ -117,6 +121,12 @@ changeDir(char * destination){
     chdir(cwd);
     free(cwd);
   }
+}
+
+void  INThandler(int sig)
+{
+     //signal(sig, SIG_IGN);
+     printf("You hit Ctrl-C");
 }
 
 
