@@ -23,14 +23,16 @@
 #include <readline/history.h>
 #include "parse.h"
 
+
 /*
  * Function declarations
  */
-void concat(char*, char**); 
+void launch(Command, int);
 void PrintCommand(int, Command *);
 void PrintPgm(Pgm *);
 void stripwhite(char *);
-
+int isEqual(char *, char *);
+void changeDir(char *);
 /* When non-zero, this global means the user is done using this program. */
 int done = 0;
 
@@ -46,7 +48,6 @@ int main(void)
   int n;
 
   while (!done) {
-
     char *line;
     line = readline("> ");
 
@@ -67,36 +68,115 @@ int main(void)
         /* execute it */
         n = parse(line, &cmd);
         PrintCommand(n, &cmd);
-	char *string = malloc(1000);
-	Pgm * pgm = cmd.pgm;
-	char **cp = pgm->pgmlist;
-	concat(string,cp);
-	printf("cmd : %s\n", string);
-	system(string);
-	free(string);
+
+        if(isEqual(*(cmd.pgm->pgmlist), "exit")){
+          exit(0);
+        }else if(isEqual(*(cmd.pgm->pgmlist), "cd")){
+          changeDir(cmd.pgm->pgmlist[1]);
+        }else{
+          launch(cmd, -1); 
+        }        
       }
     }
-    
+
     if(line) {
       free(line);
     }
   }
   return 0;
 }
-/*
- * 
- * Description: List of strings -> single string
- */
-void 
-concat(char *dest, char** list)
-{
- int i = 0;
- while(*list){
-  char *l = *list++;
-  while(*l){
-   dest[i++] = *l++;
+//compares 2 string and return 1 if equal else 0
+int
+isEqual(char *s1, char *s2){
+  while(*s1 && *s2){
+    if(*s1++ != *s2++)
+      return 0;
   }
- dest[i++] = ' ';
+  if(*s1 != *s2){
+    return 0;  
+  }
+  return 1;
+}
+void
+changeDir(char * destination){
+  if(isEqual(destination, "..") || *destination == '/'){ 
+    chdir(destination);
+  }else{
+    char *cwd =malloc(1024*sizeof(char));
+    getcwd(cwd, sizeof(cwd));
+    printf("Current wd  %s\n", cwd);
+    char * p = cwd;
+    while(*p){
+      *p++;
+    }
+    *p++ = '/';
+    while(*destination){
+      *p++ = *destination++;
+    }
+    printf("change wd  %s\n", cwd);
+    chdir(cwd);
+    free(cwd);
+  }
+}
+
+
+void
+launch(Command cmd, int parentfd)
+{
+  Pgm * pgm = cmd.pgm;
+  char **pgmlist = pgm->pgmlist;
+  cmd.pgm = pgm->next;
+
+  pid_t pid, wpid;
+  int status;
+  pid = fork();
+
+  if(pid == 0){//child
+    if(cmd.rstdin && !cmd.pgm){ //If last command and redirect stdin 
+      //printf("Redirecting stdin to %s\n", cmd.rstdin );
+      FILE * newin;
+      newin = fopen(cmd.rstdin, "r");
+      dup2(fileno(newin), 0);
+      fclose(newin);
+    }
+    if(cmd.rstdout && parentfd == -1){ //If first command and redirect stdout
+      //printf("Redirecting stdout to %s\n", cmd.rstdout);
+      FILE * new;
+      new = fopen(cmd.rstdout, "w");
+      dup2(fileno(new), 1);
+      fclose(new);
+
+    }else if(parentfd != -1){ //Got a pipe redirect stdout to pipe
+      //printf("Redirecting to pipe\n");
+      dup2(parentfd, 1);
+    }
+
+
+    if(cmd.pgm){ //If there are more commands
+      int fd[2];
+      if(pipe(fd) == -1){
+        perror("pipe");
+        return ;
+      }
+      //Set stdin to pipe read 
+      dup2(fd[0], 0);
+      close(fd[0]);
+      launch(cmd, fd[1]);
+      close(fd[1]);
+    }
+    if(cmd.bakground){
+      printf("I cant hanlde &\n");
+    }
+    if(execvp(*pgmlist, pgmlist) == -1){
+     perror("lsh");
+    }
+ }else if(pid < 0){ //error
+    perror("Error");
+ }else if(!cmd.bakground){ //parent
+    wpid = waitpid(pid, &status, 0);
+    
+ }else{
+   printf("%d\n", pid);
  }
 }
 /*
