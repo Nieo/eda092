@@ -126,8 +126,8 @@ changeDir(char * destination){
 
 void  INThandler(int sig)
 {
-  //Is this enough?  
-
+  
+  //Perhaps we should change this from 0?
   if(rPid != 0) {
     kill(rPid, SIGINT);
     rPid = 0;
