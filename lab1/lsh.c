@@ -130,6 +130,7 @@ void  INThandler(int sig)
 
   if(rPid != 0) {
     kill(rPid, SIGINT);
+    rPid = 0;
   }
 }
 
