@@ -78,12 +78,19 @@ int main(void)
 
 
         if(isEqual(*(cmd.pgm->pgmlist), "exit")){
-          printf("Closing lsh\n");
+         // printf("Closing lsh\n");
           exit(0);
         }else if(isEqual(*(cmd.pgm->pgmlist), "cd")){
-          chdir(cmd.pgm->pgmlist[1]);
+          if (cmd.pgm->pgmlist[1]){
+            int i = chdir(cmd.pgm->pgmlist[1]);
+            if(i){
+              printf("No such directory\n");
+            }
+          }else{
+            chdir(getenv("HOME"));
+          } 
         }else{
-          PrintCommand(n, &cmd);
+         // PrintCommand(n, &cmd);
           launch(cmd, -1); 
         }        
       }
@@ -95,7 +102,7 @@ int main(void)
   }
   return 0;
 }
-//compares 2 string and return 1 if equal else 0
+//compares 2 strings and return 1 if equal else 0
 int
 isEqual(char *s1, char *s2){
   while(*s1 && *s2){
@@ -113,7 +120,7 @@ void  INThandler(int sig)
   
   //Perhaps we should change this from 0?
   if(rPid != 0) {
-    printf("killing %d\n", rPid);
+    //printf("killing %d\n", rPid);
     kill(rPid, SIGINT);
     rPid = 0;
   }
@@ -149,11 +156,12 @@ launch(Command cmd, int parentfd)
     }else if(parentfd != -1){ //Got a pipe redirect stdout to pipe
       //printf("Redirecting to pipe\n");
       dup2(parentfd, 1);
+      close(parentfd);
     }
     if(cmd.bakground){
       setpgid(0 ,0);
-      int a = getpgid();
-      printf("Changed pgid %d\n", a);
+      //int a = getpgid();
+      //printf("Changed pgid %d\n", a);
     }
 
 
@@ -164,10 +172,11 @@ launch(Command cmd, int parentfd)
         return ;
       }
       //Set stdin to pipe read 
-      dup2(fd[0], 0);
-      close(fd[0]);
+      
       launch(cmd, fd[1]);
       close(fd[1]);
+      dup2(fd[0], 0);
+      close(fd[0]);
     }
     if(execvp(*pgmlist, pgmlist) == -1){
      perror("lsh");
@@ -181,7 +190,7 @@ launch(Command cmd, int parentfd)
     rPid = 0;
     
  }else{
-   printf("%d\n", pid);
+   //printf("%d\n", pid);
  }
 }
 /*
