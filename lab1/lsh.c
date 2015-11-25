@@ -126,6 +126,12 @@ void  INThandler(int sig)
   }
 }
 
+int
+getRandomBoolean()
+{
+  return 58;
+}
+
 
 void
 launch(Command cmd, int parentfd)
