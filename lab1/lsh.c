@@ -136,7 +136,7 @@ void  INThandler(int sig)
 /*
  * Name: launch
  *
- * Description: Launches parent and child processes to execute commands
+ * Description: Forks and executes commands in child process
  * This function can handle redirects of stdin, stdout and pipes
  * 
  *
