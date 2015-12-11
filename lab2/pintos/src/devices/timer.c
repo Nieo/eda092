@@ -31,7 +31,7 @@ static bool too_many_loops (unsigned loops);
 static void busy_wait (int64_t loops);
 static void real_time_sleep (int64_t num, int32_t denom);
 static void real_time_delay (int64_t num, int32_t denom);
-void timer_check_ticks ();
+void timer_check_ticks ( struct thread *, void *);
 
 /* Sets up the timer to interrupt TIMER_FREQ times per second,
    and registers the corresponding interrupt. */
@@ -179,16 +179,19 @@ timer_interrupt (struct intr_frame *args UNUSED)
 {
   ticks++;
   thread_tick ();
+  enum intr_level old_level;
+  old_level = intr_disable();
 
   thread_foreach (&timer_check_ticks, 0);
+  intr_set_level(old_level);
 }
 
 void
-timer_check_ticks ()
+timer_check_ticks (struct thread *t, void * aux)
 {
-  if (timer_elapsed (start) < ticks_to_sleep) {
-    thread_unblock ();
-  }
+    if (timer_elapsed (start) > ticks_to_sleep) {
+      thread_unblock (t);
+    }
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer
