@@ -19,8 +19,8 @@
 
 /* Number of timer ticks since OS booted. */
 static int64_t ticks;
-int64_t start;
-int64_t ticks_to_sleep;
+//int64_t start;
+//int64_t ticks_to_sleep;
 
 /* Number of loops per timer tick.
    Initialized by timer_calibrate(). */
@@ -90,17 +90,21 @@ timer_elapsed (int64_t then)
 /* Sleeps for approximately TICKS timer ticks.  Interrupts must
    be turned on. */
 void
-timer_sleep (int64_t ticks) 
+timer_sleep (int64_t ti) 
 {
   /*int64_t start = timer_ticks ();
 
   ASSERT (intr_get_level () == INTR_ON);
   while (timer_elapsed (start) < ticks) 
     thread_yield ();*/
-
-  start = timer_ticks ();
-  ticks_to_sleep = ticks;
+  struct thread *t = thread_current();
+  t->wake_at_tick = ti+ ticks;
+ // start = timer_ticks ();
+ // ticks_to_sleep = ticks;
+  enum intr_level old_level;
+  old_level = intr_disable();
   thread_block ();
+  intr_set_level(old_level);
 }
 
 /* Sleeps for approximately MS milliseconds.  Interrupts must be
@@ -189,9 +193,12 @@ timer_interrupt (struct intr_frame *args UNUSED)
 void
 timer_check_ticks (struct thread *t, void * aux)
 {
-    if (timer_elapsed (start) > ticks_to_sleep) {
+ if(t->status == THREAD_BLOCKED){
+    if (ticks >= t->wake_at_tick) {
       thread_unblock (t);
     }
+  }
+
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer
