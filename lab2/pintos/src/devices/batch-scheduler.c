@@ -39,8 +39,9 @@ void oneTask(task_t task);/*Task requires to use the bus and executes methods be
 
 struct semaphore channel, mutex, sender, sender_prio, receiver, receiver_prio;
 
-static int direction, wait_for_channel, in_channel, wait_send, wait_rec, wait_high_send, wait_high_rec, debug;
+int direction, wait_for_channel, in_channel, wait_send, wait_rec, wait_high_send, wait_high_rec, debug, hyper_debug;
 
+unsigned int total, total_finish;
 
 /* initializes semaphores */ 
 void init_bus(void){ 
@@ -55,7 +56,9 @@ void init_bus(void){
 
     direction = -1;
     in_channel = wait_send = wait_rec = wait_high_send = wait_high_rec = 0;
-    debug = 1;
+    debug = 0;
+    hyper_debug = 0;
+    total = total_finish = 0;
 }
 
 /*
@@ -74,8 +77,9 @@ void batchScheduler(unsigned int num_tasks_send, unsigned int num_task_receive,
 {
     unsigned int i;
 
-    if (debug)
+    if (debug) {
         printf("New batch with send: %d, rec: %d, hsend: %d, hrec: %d\n", num_tasks_send, num_task_receive, num_priority_send, num_priority_receive);
+    }
 
     for (i=0; i<num_priority_send; i++) {
         thread_create ("send_prio", PRI_MAX, senderPriorityTask, 0);
@@ -91,6 +95,10 @@ void batchScheduler(unsigned int num_tasks_send, unsigned int num_task_receive,
 
     for (i=0; i<num_task_receive; i++) {
         thread_create ("receive_normal", PRI_MIN, receiverTask, 0);
+    }
+
+    if (hyper_debug) {
+        total += num_tasks_send + num_task_receive + num_priority_send + num_priority_receive;
     }
 }
 
@@ -179,15 +187,14 @@ void getSlot(task_t task)
 /* task processes data on the bus send/receive */
 void transferData(task_t task) 
 {
-    if (debug)
-        printf("S priority: %d, direction: %d + in_channel: %d\n", task.priority, task.direction, in_channel);
-    //msg("Started transfer");
-
-    int64_t sleeptime = (int64_t)random_ulong();
-    timer_sleep(sleeptime%100);
-    //msg("Finished transfer");
-    if (debug)
+    if (debug) {
+        printf("S priority: %d, direction: %d\n", task.priority, task.direction);
+    }
+    int64_t sleep_time = (int64_t)random_ulong();
+    timer_sleep(sleep_time%60);
+    if (debug) {
         printf("F priority: %d, direction: %d\n", task.priority, task.direction);
+    }
 }
 
 /* task releases the slot */
@@ -200,25 +207,29 @@ void leaveSlot(task_t task)
     if ((direction == SENDER && (wait_high_send > 0 || (wait_high_rec == 0 && wait_send > 0))) || (direction == RECEIVER && in_channel == 0 && wait_high_rec == 0 && (wait_high_send > 0 || (wait_rec == 0 && wait_send > 0)))) {
         direction = SENDER;
         if (wait_high_send > 0) {
-            for (i=0; i<3-in_channel; i++) {
+            for (i=0; i<3-in_channel && i<wait_high_send; i++) {
                 sema_up(&sender_prio);
             }
         } else {
-            for (i=0; i<3-in_channel; i++) {
+            for (i=0; i<3-in_channel && i<wait_send; i++) {
                 sema_up(&sender);
             }
         }
     } else if ((direction == RECEIVER && (wait_high_rec > 0 || (wait_high_send == 0 && wait_rec > 0))) || (direction == SENDER && in_channel == 0 && wait_high_send == 0 && (wait_high_rec > 0 || (wait_send == 0 && wait_rec > 0)))){
         direction = RECEIVER;
         if (wait_high_rec > 0) {
-            for (i=0; i<3-in_channel; i++) {
+            for (i=0; i<3-in_channel && i<wait_high_rec; i++) {
                 sema_up(&receiver_prio);
             }
         } else {
-            for (i=0; i<3-in_channel; i++) {
+            for (i=0; i<3-in_channel && i<wait_rec; i++) {
                 sema_up(&receiver);
             }
         }   
+    }
+    if (hyper_debug) {
+        total_finish++;
+        printf("total: %d, totalFinish: %d, whs: %d, whr: %d, ws: %d, wr: %d, in_channel: %d\n", total, total_finish, wait_high_send, wait_high_rec, wait_send, wait_rec, in_channel);
     }
     sema_up(&mutex);
 }

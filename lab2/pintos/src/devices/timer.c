@@ -180,21 +180,15 @@ static void
 timer_interrupt (struct intr_frame *args UNUSED)
 {
   ticks++;
+  thread_foreach (&timer_check_ticks, ticks);
   thread_tick ();
-  enum intr_level old_level;
-  old_level = intr_disable();
-
-  thread_foreach (&timer_check_ticks, 0);
-  intr_set_level(old_level);
 }
 
 void
-timer_check_ticks (struct thread *t, void * aux)
+timer_check_ticks (struct thread *t, void * amount_of_ticks)
 {
- if(t->status == THREAD_BLOCKED){
-    if (ticks == t->wake_at_tick) {
-      thread_unblock (t);
-    }
+  if(amount_of_ticks && amount_of_ticks == t->wake_at_tick){
+    thread_unblock(t);
   }
 
 }
