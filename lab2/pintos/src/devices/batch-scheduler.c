@@ -37,14 +37,14 @@ void oneTask(task_t task);/*Task requires to use the bus and executes methods be
 	void transferData(task_t task); /* task processes data on the bus either sending or receiving based on the direction*/
 	void leaveSlot(task_t task); /* task release the slot */
 
-struct semaphore channel, mutex, sender, sender_prio, receiver, receiver_prio;
+struct semaphore mutex, sender, sender_prio, receiver, receiver_prio;
 
-int direction, wait_for_channel, in_channel, wait_send, wait_rec, wait_high_send, wait_high_rec, debug;
+int direction, in_channel, wait_send, wait_rec, wait_high_send, wait_high_rec, debug;
 
-/* initializes semaphores */ 
-void init_bus(void){ 
- 
-    random_init((unsigned int)123456789); 
+/* initializes semaphores */
+void init_bus(void){
+
+    random_init((unsigned int)123456789);
 
     sema_init(&mutex, 1);
     sema_init(&sender, 0);
@@ -62,7 +62,7 @@ void init_bus(void){
  *  sending data to the accelerator and num_task_receive + num_priority_receive tasks
  *  reading data/results from the accelerator.
  *
- *  Every task is represented by its own thread. 
+ *  Every task is represented by its own thread.
  *  Task requires and gets slot on bus system (1)
  *  process data and the bus (2)
  *  Leave the bus (3).
@@ -127,7 +127,7 @@ void oneTask(task_t task) {
 
 
 /* task tries to get slot on the bus subsystem */
-void getSlot(task_t task) 
+void getSlot(task_t task)
 {
     sema_down(&mutex);
     if (direction == -1 || in_channel == 0) {
@@ -137,7 +137,7 @@ void getSlot(task_t task)
     if (direction == task.direction && in_channel < 3 && ((task.priority == HIGH) || (wait_high_rec == 0 && wait_high_send == 0))) {
         in_channel++;
     } else {
-        
+
         if (task.priority == HIGH) {
             if (task.direction == SENDER) {
                 wait_high_send++;
@@ -177,7 +177,7 @@ void getSlot(task_t task)
 }
 
 /* task processes data on the bus send/receive */
-void transferData(task_t task) 
+void transferData(task_t task)
 {
     if (debug) {
         printf("S priority: %d, direction: %d\n", task.priority, task.direction);
@@ -190,7 +190,7 @@ void transferData(task_t task)
 }
 
 /* task releases the slot */
-void leaveSlot(task_t task) 
+void leaveSlot(task_t task)
 {
     sema_down(&mutex);
     int i;
@@ -217,7 +217,7 @@ void leaveSlot(task_t task)
             for (i=0; i<3-in_channel && i<wait_rec; i++) {
                 sema_up(&receiver);
             }
-        }   
+        }
     }
     sema_up(&mutex);
 }

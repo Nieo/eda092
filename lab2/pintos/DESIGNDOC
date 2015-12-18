@@ -1,0 +1,128 @@
+			+--------------------+
+			|    EDA092/DIT400   |
+			| LAB ASSIGNMENT 2:  |
+			| 	THREADS      |
+			|   DESIGN DOCUMENT  |
+			+--------------------+
+
+---- GROUP B21 ----
+
+>> Fill in the group number, names and email addresses of your group members.
+
+Erik Pihl <pierik@student.chalmers.se>
+Tomas Hasselquist <tomasha@student.chalmers.se>
+
+
+---- PRELIMINARIES ----
+
+>> If you have any preliminary comments on your submission, notes for the
+>> TAs, please give them here.
+
+>> Please cite any offline or online sources you consulted while
+>> preparing your submission, other than the Pintos documentation, course
+>> text, lecture notes, and course staff.
+
+			     ALARM CLOCK
+			     ===========
+
+---- DATA STRUCTURES ----
+
+>> A1: Copy here the declaration of each new or changed `struct' or
+>> `struct' member, global or static variable, `typedef', or
+>> enumeration.  Identify the purpose of each in 25 words or less.
+
+struct thread
+  {
+    /* Owned by thread.c. */
+    tid_t tid;                          /* Thread identifier. */
+    enum thread_status status;          /* Thread state. */
+    char name[16];                      /* Name (for debugging purposes). */
+    uint8_t *stack;                     /* Saved stack pointer. */
+    int priority;                       /* Priority. */
+    struct list_elem allelem;           /* List element for all threads list. */
+
+    /* Shared between thread.c and synch.c. */
+    struct list_elem elem;              /* List element. */
+    int64_t wake_at_tick;
+#ifdef USERPROG
+    /* Owned by userprog/process.c. */
+    uint32_t *pagedir;                  /* Page directory. */
+#endif
+
+    /* Owned by thread.c. */
+    unsigned magic;                     /* Detects stack overflow. */
+  };
+We added wake_at_tick to keep track of when the thread should wake from sleep.
+
+---- ALGORITHMS ----
+
+>> A2: Briefly describe what happens in a call to timer_sleep(),
+>> including the effects of the timer interrupt handler.
+We compute at what tick the thread shuold wake and then block it.
+
+
+>> A3: What steps are taken to minimize the amount of time spent in
+>> the timer interrupt handler?
+We use thread_foreach to delegate the check to each thread. The function that
+is sent with thread_foreach only contains an if to see if the thread should unblock.
+
+
+---- SYNCHRONIZATION ----
+
+>> A4: How are race conditions avoided when multiple threads call
+>> timer_sleep() simultaneously?
+We disable interrupt while setting the wake_at_tick and blocking
+
+>> A5: How are race conditions avoided when a timer interrupt occurs
+>> during a call to timer_sleep()?
+Cannot happen as interupts are disabled during the critical part of timer_sleep.
+
+---- RATIONALE ----
+
+>> A6: Why did you choose this design?  In what ways is it superior to
+>> another design you considered?
+This design used minimal amount of interrupts and code.
+
+			    BATCH SCHEDULING
+			    ================
+---- DATA STRUCTURES ----
+
+>> A1: Copy here the declaration of each new or changed `struct' or
+>> `struct' member, global or static variable, semaphore, `typedef', or
+>> enumeration.  Identify the purpose of each in 25 words or less.
+struct semaphore mutex, sender, sender_prio, receiver, receiver_prio;
+Mutex to make sure that critical code segement is only accessed by one thread at a time.
+The other 4 are used as queues for the different tasks.
+int direction, in_channel, wait_send, wait_rec, wait_high_send, wait_high_rec, debug;
+direction keeps track of the current transfer direction
+in_channel for keeping track of the amount of tasks that transfers.
+debug to enable/disable printouts
+The rest to keep track of how many tasks there are in each queue.
+
+---- SYNCHRONIZATION ----
+
+>> C1: How does your solution guarantee that no more that 3 tasks
+>> are using the bus in the same direction?
+When a task tries to enter it aquires the mutex semaphore and checks if there is space in the channel. If there is no space it will put itself in a queue.
+
+>> C2: What prevents tasks from opposite directions from using the
+>> bus simultaneously?
+When a task tries to enter it checks if the current direction is the same as the task direction if its the opposite direction the task will be put in a queue.
+
+>> C3: How does your solution grant priority to high priority tasks over
+>> the waiting tasks in the same direction?
+When a task finnishes it will try to give its place to a high priority task before it gives it to a normal task.
+
+>> C4: How do you guarantee that despite having priority, high priority
+>> tasks do not start using the bus while there are still still using
+>> it in the oposite direction?
+The tasks can only wake up tasks in the current direction if there are other tasks on the bus.
+
+
+---- RATIONALE ----
+
+>> C6: Why did you choose this design? Did you consider other design
+>> alternatives? In what ways is it superior to another design you considered?
+This design was easy to understand and implement. All it focuses on is putting the tasks in queues and then waking up the correct queue when the tasks are done.
+
+
