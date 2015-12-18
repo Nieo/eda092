@@ -188,6 +188,7 @@ void
 timer_check_ticks (struct thread *t, void * amount_of_ticks)
 {
   if(amount_of_ticks && amount_of_ticks == t->wake_at_tick){
+    t->wake_at_tick = 0;
     thread_unblock(t);
   }
 

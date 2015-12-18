@@ -39,9 +39,7 @@ void oneTask(task_t task);/*Task requires to use the bus and executes methods be
 
 struct semaphore channel, mutex, sender, sender_prio, receiver, receiver_prio;
 
-int direction, wait_for_channel, in_channel, wait_send, wait_rec, wait_high_send, wait_high_rec, debug, hyper_debug;
-
-unsigned int total, total_finish;
+int direction, wait_for_channel, in_channel, wait_send, wait_rec, wait_high_send, wait_high_rec, debug;
 
 /* initializes semaphores */ 
 void init_bus(void){ 
@@ -57,8 +55,6 @@ void init_bus(void){
     direction = -1;
     in_channel = wait_send = wait_rec = wait_high_send = wait_high_rec = 0;
     debug = 0;
-    hyper_debug = 0;
-    total = total_finish = 0;
 }
 
 /*
@@ -95,10 +91,6 @@ void batchScheduler(unsigned int num_tasks_send, unsigned int num_task_receive,
 
     for (i=0; i<num_task_receive; i++) {
         thread_create ("receive_normal", PRI_MIN, receiverTask, 0);
-    }
-
-    if (hyper_debug) {
-        total += num_tasks_send + num_task_receive + num_priority_send + num_priority_receive;
     }
 }
 
@@ -226,10 +218,6 @@ void leaveSlot(task_t task)
                 sema_up(&receiver);
             }
         }   
-    }
-    if (hyper_debug) {
-        total_finish++;
-        printf("total: %d, totalFinish: %d, whs: %d, whr: %d, ws: %d, wr: %d, in_channel: %d\n", total, total_finish, wait_high_send, wait_high_rec, wait_send, wait_rec, in_channel);
     }
     sema_up(&mutex);
 }
